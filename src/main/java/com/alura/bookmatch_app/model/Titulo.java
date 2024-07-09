@@ -69,13 +69,13 @@ public class Titulo {
 
     @Override
     public String toString() {
-        return  """
+        return """
                 -----------------Libro---------------
                 Titulo: %s
                 Autor: %s
                 Idioma: %s
                 Descargas: %d
                 -------------------------------------
-                """.formatted(this.titulo,this.autors.getNombre(),this.idioma,this.numeroDeDescarga);
+                """.formatted(this.titulo, this.autors.getNombre(), this.idioma, this.numeroDeDescarga);
     }
 }

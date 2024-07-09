@@ -13,11 +13,12 @@ import java.util.stream.Collectors;
 
 public class Principal {
     private ConsumoAPI consumoApi = new ConsumoAPI(); //conexionURL.consultar
-    private ConvierteDatos conversor =  new ConvierteDatos(); //conversor.convertir
+    private ConvierteDatos conversor = new ConvierteDatos(); //conversor.convertir
     private Scanner sc = new Scanner(System.in); //teclado
     private final String URL_BASE = "https://gutendex.com/books/?";
     private final String SEARCH = "search=";
     private RepositorioAutor repositorioAutor;
+
     public Principal(RepositorioAutor repositorioAutor) {
         this.repositorioAutor = repositorioAutor;
     }
@@ -29,7 +30,7 @@ public class Principal {
             System.out.println("""
                     --------------------------
                     Elige una opcion: 
-                    
+                                        
                     1. Buscar libro por titulo
                     2. Listar libros guardados
                     3. Listar autores guardados
@@ -67,7 +68,7 @@ public class Principal {
         System.out.println("Escribe el nombre del autor");
         String nombreAutor = sc.nextLine();
         List<Titulo> titulosTemp = repositorioAutor.tituloPorAutor(nombreAutor);
-        if (titulosTemp.isEmpty()){
+        if (titulosTemp.isEmpty()) {
             System.out.println("Sin resultados");
         }
         titulosTemp.forEach(System.out::println);
@@ -82,8 +83,8 @@ public class Principal {
                 """);
         System.out.println("Ingrese el idioma para buscar los libros:");
         String entrada = sc.nextLine();
-        List<Titulo>  titulosTemp = repositorioAutor.listaTitulosPorIdioma(entrada);
-        if (titulosTemp.isEmpty()){
+        List<Titulo> titulosTemp = repositorioAutor.listaTitulosPorIdioma(entrada);
+        if (titulosTemp.isEmpty()) {
             System.out.println("Sin resultados");
         }
         titulosTemp.forEach(System.out::println);
@@ -95,7 +96,7 @@ public class Principal {
         sc.nextLine();
 
         List<Autor> autorsTemp = repositorioAutor.liveYearCheck(year);
-        if (autorsTemp.isEmpty()){
+        if (autorsTemp.isEmpty()) {
             System.out.println("Sin resultados");
         }
         autorsTemp.forEach(System.out::println);
