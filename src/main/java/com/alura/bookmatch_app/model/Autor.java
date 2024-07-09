@@ -2,29 +2,39 @@ package com.alura.bookmatch_app.model;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
-@Table(name = "autores")
 public class Autor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column
+    @Column(unique = true)
     private String nombre;
-    @Column
-    private Integer anioDeNacimiento;  // Usar "anio" en lugar de "año"
+    private Integer fechaNacimiento;
+    private Integer fechaFallecimiento;
+    @OneToMany(mappedBy = "autors", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<Titulo> titulos = new ArrayList<>();
 
-    @Column
-    private Integer anioDeFallecimiento;  // Usar "anio" en lugar de "año"
+    public Autor() {
+    }
 
-    @ManyToOne
-    @JoinColumn(name = "libro_id")
-    private Libro libro;
-    // Constructor, getters y setters
-    public Autor() {}
-    public Autor(String nombre, Integer anioDeNacimiento, Integer anioDeFallecimiento) {
-        this.nombre = nombre;
-        this.anioDeNacimiento = anioDeNacimiento;
-        this.anioDeFallecimiento = anioDeFallecimiento;
+    public Autor(DatosAutor datosAutor, Titulo titulo) {
+        this.nombre = datosAutor.nombre();
+        this.fechaNacimiento = datosAutor.fechaNacimiento();
+        this.fechaFallecimiento = datosAutor.fechaFalleimiento();
+        this.titulos.add(titulo);
+    }
+
+    public void addTitulo(Titulo titulo) {
+        this.titulos.add(titulo);
+    }
+
+    public Autor(DatosAutor datosAutor) {
+        this.nombre = datosAutor.nombre();
+        this.fechaNacimiento = datosAutor.fechaNacimiento();
+        this.fechaFallecimiento = datosAutor.fechaFalleimiento();
     }
 
     public Long getId() {
@@ -43,27 +53,40 @@ public class Autor {
         this.nombre = nombre;
     }
 
-    public Integer getAnioDeNacimiento() {
-        return anioDeNacimiento;
+    public Integer getFechaNacimiento() {
+        return fechaNacimiento;
     }
 
-    public void setAnioDeNacimiento(Integer anioDeNacimiento) {
-        this.anioDeNacimiento = anioDeNacimiento;
+    public void setFechaNacimiento(Integer fechaNacimiento) {
+        this.fechaNacimiento = fechaNacimiento;
     }
 
-    public Integer getAnioDeFallecimiento() {
-        return anioDeFallecimiento;
+    public Integer getFechaFallecimiento() {
+        return fechaFallecimiento;
     }
 
-    public void setAnioDeFallecimiento(Integer anioDeFallecimiento) {
-        this.anioDeFallecimiento = anioDeFallecimiento;
+    public void setFechaFallecimiento(Integer fechaFallecimiento) {
+        this.fechaFallecimiento = fechaFallecimiento;
     }
 
-    public Libro getLibro() {
-        return libro;
+    public List<Titulo> getTitulos() {
+        return titulos;
     }
 
-    public void setLibro(Libro libro) {
-        this.libro = libro;
+    public void setTitulos(List<Titulo> titulos) {
+        this.titulos = titulos;
+    }
+
+    @Override
+    public String toString() {
+
+        return """
+                Autor; %s
+                Fecha de nacimiento: %d
+                Fecha de fallecimiento: %d
+                Libros: %s
+                """.formatted(this.nombre, this.fechaNacimiento, this.fechaFallecimiento,
+                this.titulos.stream().map(Titulo::getTitulo).toList().toString()
+        );
     }
 }

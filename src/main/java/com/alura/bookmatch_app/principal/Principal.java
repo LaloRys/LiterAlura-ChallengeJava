@@ -1,48 +1,55 @@
 package com.alura.bookmatch_app.principal;
 
-import com.alura.bookmatch_app.model.Autor;
-import com.alura.bookmatch_app.model.DatosLibro;
-import com.alura.bookmatch_app.model.DatosLibros;
-import com.alura.bookmatch_app.model.Libro;
-import com.alura.bookmatch_app.repository.LibroRepository;
+import com.alura.bookmatch_app.model.*;
+import com.alura.bookmatch_app.repository.RepositorioAutor;
 import com.alura.bookmatch_app.service.ConsumoAPI;
 import com.alura.bookmatch_app.service.ConvierteDatos;
 
+import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class Principal {
-    private ConsumoAPI consumoApi = new ConsumoAPI();
-    private ConvierteDatos conversor =  new ConvierteDatos();
-    private Scanner sc = new Scanner(System.in);
+    private ConsumoAPI consumoApi = new ConsumoAPI(); //conexionURL.consultar
+    private ConvierteDatos conversor =  new ConvierteDatos(); //conversor.convertir
+    private Scanner sc = new Scanner(System.in); //teclado
     private final String URL_BASE = "https://gutendex.com/books/?";
     private final String SEARCH = "search=";
-    private String titulo;
-    private LibroRepository libroRepository;
-
-    public Principal(LibroRepository libroRepository) {
-        this.libroRepository = libroRepository;
+    private RepositorioAutor repositorioAutor;
+    public Principal(RepositorioAutor repositorioAutor) {
+        this.repositorioAutor = repositorioAutor;
     }
 
 
-    public void iniciarPrograma() {
+    public void iniciarPrograma() throws IOException, InterruptedException {
         var opcion = -1;
         while (opcion != 0) {
             System.out.println("""
                     --------------------------
                     Elige una opcion: 
+                    
                     1. Buscar libro por titulo
                     2. Listar libros guardados
+                    3. Listar autores guardados
+                    4. Listar autores vivos en un determinado año
+                    5. Listar libros por idioma
+                    6. Listar Libros por autor
+                    7. Listar 10 más descargados registrados
                                         
                     0. Salir
                     """);
             opcion = sc.nextInt();
             sc.nextLine();
             switch (opcion) {
-                case 1 -> buscarLibroApi();
-                case 2 -> listarLibrosGuardados();
+                case 1 -> buscarLibroPorTitulo();
+                case 2 -> mostrarLibrosRegistrados();
+                case 3 -> mostrarAutores();
+                case 4 -> mostrarLiveYearCheck();
+                case 5 -> mostrarLibrosPorIdioma();
+                case 6 -> mostrarLibrosPorAutor();
+                case 7 -> mostrar10MasDescargados();
 
                 case 0 -> System.out.println("Cerrando la aplicacion... Adios...");
                 default -> System.out.println("Opcion no valida");
@@ -51,91 +58,93 @@ public class Principal {
 
     }
 
-    private void listarLibrosGuardados() {
-        var libros = libroRepository.findAll();
-        if (libros.isEmpty()) {
-            System.out.println("No hay libros guardados");
-        } else {
-            System.out.println("Libros guardados: ");
-            libros.forEach(l -> {
-                System.out.printf("""
-                    ----- LIBRO -----
-                    Titulo: %s
-                    Autor(es): %s
-                    Numero de descargas: %.0f
-                    -----------------
-                    """, l.getTitulo(), l.getAutores().get(0) ,l.getNumeroDeDescargas());
-            });
-        }
+    private void mostrar10MasDescargados() {
+        List<Titulo> titulosTemp = repositorioAutor.masDescargados();
+        titulosTemp.forEach(System.out::println);
     }
 
-    private DatosLibros getLibro() {
+    private void mostrarLibrosPorAutor() {
+        System.out.println("Escribe el nombre del autor");
+        String nombreAutor = sc.nextLine();
+        List<Titulo> titulosTemp = repositorioAutor.tituloPorAutor(nombreAutor);
+        if (titulosTemp.isEmpty()){
+            System.out.println("Sin resultados");
+        }
+        titulosTemp.forEach(System.out::println);
+    }
+
+    private void mostrarLibrosPorIdioma() {
+        System.out.println("""
+                es: Español
+                pt: Portugués
+                fr: Francés
+                en: Inglés
+                """);
+        System.out.println("Ingrese el idioma para buscar los libros:");
+        String entrada = sc.nextLine();
+        List<Titulo>  titulosTemp = repositorioAutor.listaTitulosPorIdioma(entrada);
+        if (titulosTemp.isEmpty()){
+            System.out.println("Sin resultados");
+        }
+        titulosTemp.forEach(System.out::println);
+    }
+
+    private void mostrarLiveYearCheck() {
+        System.out.println("Ingrese el año vivo de autor(es) que desea buscar");
+        Integer year = sc.nextInt();
+        sc.nextLine();
+
+        List<Autor> autorsTemp = repositorioAutor.liveYearCheck(year);
+        if (autorsTemp.isEmpty()){
+            System.out.println("Sin resultados");
+        }
+        autorsTemp.forEach(System.out::println);
+    }
+
+    private void mostrarAutores() {
+        repositorioAutor.findAll().forEach(System.out::println);
+    }
+
+    private void mostrarLibrosRegistrados() {
+        repositorioAutor.todosLosTitulos().forEach(System.out::println);
+    }
+
+    private void buscarLibroPorTitulo() throws IOException, InterruptedException {
         System.out.println("Escribe el nombre del libro que deseas buscar: ");
-        titulo = sc.nextLine();
-        var json = consumoApi.obtenerLibros(URL_BASE + SEARCH + titulo.replace(" ", "%20"));
-//        System.out.println("Consulta api ->" + titulo+ " -- json: " + json);
-        DatosLibros datos = conversor.obtenerDatos(json, DatosLibros.class);
-        return datos;
-    }
+        String nombreTitulo = sc.nextLine();
+        DatosConsulta consulta = buscarLibro(nombreTitulo);
 
-    private void buscarLibroApi() {
-        var datos = getLibro();
-        System.out.println("datos = " + datos);
-        if (datos.numeroDeLibros() == 0) {
-            System.out.println("No se encontro el libro");
-        } else {
-            System.out.println("Se encontro " + datos.numeroDeLibros() + " libros");
-            datos.libros().forEach(System.out::println);
-            System.out.println("Primer libro = " + datos.libros().get(0));
-            var busquedaLibro = datos.libros().stream()
-                    .filter(libro -> libro.titulo().toLowerCase().equals(titulo.toLowerCase()))
-                    .collect(Collectors.toList());
-            if (busquedaLibro.isEmpty()) {
-                System.out.println("No se encontro el libro con el título exacto: " + titulo);
-                System.out.println("Primer libro con titulo similar: ");
-                var libroEncontrado = datos.libros().get(0);
-                imprimirLibro(libroEncontrado);
-                crearYGuardarLibro(libroEncontrado);
+        Optional<Titulo> titulo = consulta.resultados().stream()
+                .map(t -> new Titulo(
+                        t.titulo(),
+                        t.idiomas(),
+                        t.numeroDeDescargas(),
+                        t.autores()
+                )).findFirst();
 
+        if (titulo.isPresent()) {
+            Titulo tituloTemp = titulo.get();
+            Autor autorTemp = tituloTemp.getAutors();
+            if (repositorioAutor.buscarTituloPorNombre(tituloTemp.getTitulo()).isPresent()) {
+                System.out.println("No se puede registrar este libro más de una vez");
+            } else if (repositorioAutor.findByNombreContainsIgnoreCase(autorTemp.getNombre()).isPresent()) {
+                tituloTemp.setAutors(repositorioAutor.findByNombreContainsIgnoreCase(autorTemp.getNombre()).get());
+                tituloTemp.getAutors().addTitulo(tituloTemp);
+                repositorioAutor.save(tituloTemp.getAutors());
+                System.out.println(tituloTemp);
             } else {
-                var libroEncontrado = busquedaLibro.get(0);
-                System.out.println("Se encontró el libro con el título exacto: " + libroEncontrado);
-                imprimirLibro(libroEncontrado);
-                crearYGuardarLibro(libroEncontrado);
+                titulo.get().getAutors().addTitulo(titulo.get());
+                repositorioAutor.save(titulo.get().getAutors());
+                System.out.println(tituloTemp);
             }
+
+        } else {
+            System.out.println("Titulo no encontrado");
         }
     }
 
-    private void crearYGuardarLibro(DatosLibro datosLibro) {
-        try {
-            Libro libro = new Libro(datosLibro);
-            // Mapear autores desde DatosAutor a Autor y establecerlos en el libro
-            List<Autor> autores = datosLibro.autores().stream()
-                    .map(datosAutor -> {
-                        Integer añoNacimiento = Integer.parseInt(datosAutor.anioDeNacimiento());
-                        Integer añoFallecimiento = Integer.parseInt(datosAutor.anioDeFallecimiento());
-                        Autor autor = new Autor(datosAutor.nombre(), añoNacimiento, añoFallecimiento);
-                        autor.setLibro(libro); // Establecer la relación bidireccional si es necesario
-                        return autor;
-                    })
-                    .toList();
-            libro.setAutores(autores);
-            libroRepository.save(libro);
-            System.out.println("Libro guardado correctamente");
-        } catch (Exception e) {
-            System.out.println("Error al guardar el libro: " + e.getMessage());
-        }
-    }
-
-    private void imprimirLibro(DatosLibro libro) {
-        String autor = libro.autores().isEmpty() ? "Desconocido" : libro.autores().get(0).nombre();
-        System.out.printf("""
-                    ----- LIBRO -----
-                    Titulo: %s
-                    Autor: %s
-                    Idioma: %s
-                    Numero de descargas: %.0f
-                    -----------------
-                    """, libro.titulo(), autor, libro.idiomas().get(0), libro.numeroDeDescargas());
+    private DatosConsulta buscarLibro(String titulo) throws IOException, InterruptedException {
+        return conversor.obtenerDatos(new String(consumoApi.obtenerLibros(URL_BASE + SEARCH + titulo.replace(" ",
+                "%20"))), DatosConsulta.class);
     }
 }
